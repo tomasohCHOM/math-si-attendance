@@ -94,11 +94,11 @@
   async function markAttendance() {
     let responseMessage = "";
     loading = true;
+    console.log("Attendance for:", course);
     for (const student of students) {
       if (!student.checkedForAttendance) {
         continue;
       }
-      console.log(course);
       console.log("SIGNING IN:", student.name);
       const res = await fetch(
         `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
@@ -128,10 +128,10 @@
 
   onMount(async () => {
     const storedStudents = localStorage.getItem("students");
-    const storedCourse = localStorage.getItem("course");
     if (storedStudents) {
       students = JSON.parse(storedStudents);
     }
+    const storedCourse = localStorage.getItem("course");
     if (storedCourse) {
       course = storedCourse;
     }
