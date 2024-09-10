@@ -25,8 +25,7 @@
   </div>
 
   <div
-    class:hidden={!isOpen}
-    class="custom-overlay"
+    class="custom-overlay {isOpen ? 'custom-overlay-active' : ''}"
     on:click={toggleContainer}
     on:keydown={toggleContainer}
     role="presentation"
@@ -43,7 +42,7 @@
     top: 55%;
     z-index: 20;
     display: none;
-    width: 768px;
+    width: min(768px, 90vw);
     max-height: 400px;
     overflow-y: scroll;
     transform: translate(-50%, -50%);
@@ -71,6 +70,7 @@
 
   .custom-overlay {
     position: fixed;
+    display: none;
     left: 0;
     top: 0;
     z-index: 10;
@@ -78,5 +78,8 @@
     width: 100vw;
     background-color: rgba(15, 23, 42, 0.25);
   }
-</style>
 
+  .custom-overlay-active {
+    display: block;
+  }
+</style>
