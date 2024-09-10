@@ -1,51 +1,80 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import AttendancePopup from "./lib/attendance-popup.svelte";
 
   type Student = {
     name: string;
     cwid: string;
   };
 
-  let students: Student[] = [
-    { name: "Alice Morgan", cwid: "123456789" },
-    { name: "John Smith", cwid: "987654321" },
-    { name: "Emily Davis", cwid: "456789123" },
-    { name: "Michael Johnson", cwid: "321987654" },
-    { name: "Sophia Martinez", cwid: "159753486" },
-    { name: "Daniel Brown", cwid: "753951284" },
-    { name: "Jessica Wilson", cwid: "852369741" },
-    { name: "Christopher Garcia", cwid: "369258147" },
-    { name: "Amanda Lee", cwid: "741852963" },
-    { name: "James Anderson", cwid: "963852741" },
-    { name: "Olivia Hernandez", cwid: "258741369" },
-    { name: "Benjamin Carter", cwid: "147852369" },
-    { name: "Victoria Walker", cwid: "951753486" },
-    { name: "Joshua Turner", cwid: "753159486" },
-    { name: "Megan Clark", cwid: "369147258" },
-    { name: "Alexander Adams", cwid: "159486753" },
-    { name: "Samantha Hall", cwid: "852741369" },
-    { name: "Andrew Phillips", cwid: "456321789" },
-    { name: "Chloe Baker", cwid: "789123456" },
-    { name: "Ryan Parker", cwid: "123789456" },
-  ];
+  let students: Student[] = [];
+
+  let isAttendanceOpen: boolean = false;
+  let newStudentName = "";
+  let newStudentCWID = "";
+
+  function addNewStudent() {
+    if (!newStudentName || !newStudentCWID) {
+      return;
+    }
+    students = [...students, { name: newStudentName, cwid: newStudentCWID }];
+    newStudentName = "";
+    newStudentCWID = "";
+    updateStudentsStorage();
+  }
 
   function deleteStudent(i: number) {
     students.splice(i, 1);
     students = students;
+    updateStudentsStorage();
+  }
+
+  function updateStudentsStorage() {
     localStorage.setItem("students", JSON.stringify(students));
   }
 
   onMount(async () => {
-    localStorage.getItem("students");
+    const storedStudents = localStorage.getItem("students");
+    if (storedStudents) {
+      students = JSON.parse(storedStudents);
+    }
   });
 </script>
+
+<AttendancePopup bind:isOpen={isAttendanceOpen}>
+  <h2>New Attendance</h2>
+  <table class="student-table">
+    <thead>
+      <tr class="border-b-2 border-foreground-400">
+        <th>Name</th>
+        <th>CWID</th>
+        <th>Attended?</th>
+      </tr>
+    </thead>
+    <tbody>
+      {#if students.length !== 0}
+        {#each students as student}
+          <tr class="space-under">
+            <td>{student.name}</td>
+            <td>{student.cwid}</td>
+            <input type="checkbox" checked />
+          </tr>
+        {/each}
+      {:else}
+        <div>No students signed in yet.</div>
+      {/if}
+    </tbody>
+  </table>
+  <button class="btn-contrast full-w">Submit Attendance</button>
+</AttendancePopup>
 
 <main>
   <h1>MATH SI Attendance</h1>
 
   <p>A website to make Math SI Attendance a little more bearable.</p>
 
-  <button class="btn-contrast full-w">New Attendance</button>
+  <button class="btn-contrast full-w" on:click={() => {}}>New Attendance</button
+  >
 
   <table class="student-table">
     <thead>
@@ -56,22 +85,34 @@
       </tr>
     </thead>
     <tbody>
-      {#each students as student, i}
-        <tr>
-          <td>{student.name}</td>
-          <td>{student.cwid}</td>
-          <button class="btn-danger" on:click={() => deleteStudent(i)}>
-            Delete Student
-          </button>
-        </tr>
-      {/each}
+      {#if students.length !== 0}
+        {#each students as student, i}
+          <tr class="space-under">
+            <td>{student.name}</td>
+            <td>{student.cwid}</td>
+            <button class="btn-danger" on:click={() => deleteStudent(i)}>
+              Delete Student
+            </button>
+          </tr>
+        {/each}
+      {:else}
+        <div>No students signed in yet.</div>
+      {/if}
     </tbody>
   </table>
 
   <div class="add-student-container">
-    <input class="input-elem" placeholder="Enter student name" />
-    <input class="input-elem" placeholder="Enter student CWID" />
-    <button class="btn-contrast">Add Student</button>
+    <input
+      class="input-elem"
+      placeholder="Enter student name"
+      bind:value={newStudentName}
+    />
+    <input
+      class="input-elem"
+      placeholder="Enter student CWID"
+      bind:value={newStudentCWID}
+    />
+    <button class="btn-contrast" on:click={addNewStudent}>Add Student</button>
   </div>
 </main>
 
@@ -83,11 +124,12 @@
 
   .student-table {
     margin-top: 0.5rem;
-    padding: 0.25rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 0.5rem;
     text-align: left;
     width: 100%;
     background-color: rgb(var(--color-background-500));
+    border-spacing: 0 0.5rem;
   }
 
   .add-student-container {
