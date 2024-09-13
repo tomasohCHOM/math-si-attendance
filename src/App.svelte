@@ -3,19 +3,13 @@
   import AttendancePopup from "./lib/attendance-popup.svelte";
 
   const courses = [
-    // "MATH-115A",
-    // "MATH-115B",
     "MATH-115",
     "MATH-120",
     "MATH-125",
     "MATH-130",
     "MATH-135",
     "MATH-150",
-    // "MATH-150A",
-    // "MATH-150B",
     "MATH-250",
-    // "MATH-250A",
-    // "MATH-250B",
     "MATH-280",
   ];
 
@@ -35,6 +29,7 @@
   let isAttendanceOpen: boolean = false;
   let newStudentErrorMessage: string = "";
   let loading: boolean = false;
+  let attendanceLogs: string[] = [];
 
   function addNewStudent() {
     if (!isValidStudent(newStudentName, newStudentCWID)) {
@@ -93,6 +88,7 @@
 
   async function markAttendance() {
     let responseMessage = "";
+    attendanceLogs = [];
     loading = true;
     console.log("Attendance for:", course);
     for (const student of students) {
@@ -100,6 +96,7 @@
         continue;
       }
       console.log("SIGNING IN:", student.name);
+      attendanceLogs = [...attendanceLogs, `Signing in: ${student.name}`];
       const res = await fetch(
         `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
         {
@@ -117,12 +114,15 @@
       }
 
       if (responseMessage.length) {
+        attendanceLogs = [...attendanceLogs, `Error: ${responseMessage}`];
         loading = false;
         return;
       }
       console.log(student.name, "SIGNED IN");
+      attendanceLogs = [...attendanceLogs, `${student.name} signed in`];
     }
     loading = false;
+    attendanceLogs = [];
     isAttendanceOpen = false;
   }
 
@@ -180,6 +180,14 @@
       Submit Attendance
     {/if}
   </button>
+
+  <div style="margin-top: 1rem;">
+    {#if attendanceLogs.length}
+      {#each attendanceLogs as log}
+        <div>{log}</div>
+      {/each}
+    {/if}
+  </div>
 </AttendancePopup>
 
 <main>
