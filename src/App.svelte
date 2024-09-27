@@ -19,7 +19,7 @@
     checkedForAttendance: boolean;
   };
 
-  type Attending = "processed" | "processing" | "none";
+  type Attending = "processed" | "processing" | "none" | "failed";
 
   type StudentAttending = {
     student: Student;
@@ -112,6 +112,7 @@
       await new Promise((r) => setTimeout(r, 2000));
       studentsAttending[i].attending = "processed";
       studentsAttending = studentsAttending;
+      continue;
       const res = await fetch(
         `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
         {
@@ -135,7 +136,6 @@
       console.log(student.name, "SIGNED IN");
     }
     loading = false;
-    isAttendanceOpen = false;
   }
 
   onMount(async () => {
@@ -187,11 +187,7 @@
       on:click={markAttendance}
       disabled={loading}
     >
-      {#if loading}
-        Processing...
-      {:else}
-        Submit Attendance
-      {/if}
+      Submit Attendance
     </button>
   {:else}
     <div style="margin-top: 1rem;">
@@ -211,11 +207,13 @@
               <tr class="space-under">
                 <td>{studentAttending.student.name}</td>
                 <td>{studentAttending.student.cwid}</td>
-                <td>
+                <td style="font-weight: 500;">
                   {#if studentAttending.attending === "processed"}
-                    Done
+                    ✅
                   {:else if studentAttending.attending === "processing"}
-                    Waiting...
+                    <img width="20" src="/loading.svg" alt="Loading Icon" />
+                  {:else if studentAttending.attending === "failed"}
+                    Error ❌
                   {:else}
                     Skipped
                   {/if}
