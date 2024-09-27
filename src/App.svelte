@@ -112,7 +112,6 @@
       await new Promise((r) => setTimeout(r, 2000));
       studentsAttending[i].attending = "processed";
       studentsAttending = studentsAttending;
-      continue;
       const res = await fetch(
         `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
         {
