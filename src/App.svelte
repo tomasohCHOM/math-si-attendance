@@ -19,7 +19,15 @@
     checkedForAttendance: boolean;
   };
 
+  type Attending = "processed" | "processing" | "none";
+
+  type StudentAttending = {
+    student: Student;
+    attending: Attending;
+  };
+
   let students: Student[] = [];
+  let studentsAttending: StudentAttending[] = [];
 
   let course: string = "";
   let newStudentName: string = "";
@@ -29,7 +37,6 @@
   let isAttendanceOpen: boolean = false;
   let newStudentErrorMessage: string = "";
   let loading: boolean = false;
-  let attendanceLogs: string[] = [];
 
   function addNewStudent() {
     if (!isValidStudent(newStudentName, newStudentCWID)) {
@@ -88,15 +95,23 @@
 
   async function markAttendance() {
     let responseMessage = "";
-    attendanceLogs = [];
     loading = true;
     console.log("Attendance for:", course);
-    for (const student of students) {
+
+    studentsAttending = students.map((student) => ({
+      student,
+      attending: student.checkedForAttendance ? "processing" : "none",
+    }));
+
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
       if (!student.checkedForAttendance) {
         continue;
       }
       console.log("SIGNING IN:", student.name);
-      attendanceLogs = [...attendanceLogs, `Signing in: ${student.name}`];
+      await new Promise((r) => setTimeout(r, 2000));
+      studentsAttending[i].attending = "processed";
+      studentsAttending = studentsAttending;
       const res = await fetch(
         `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
         {
@@ -114,15 +129,12 @@
       }
 
       if (responseMessage.length) {
-        attendanceLogs = [...attendanceLogs, `Error: ${responseMessage}`];
         loading = false;
         return;
       }
       console.log(student.name, "SIGNED IN");
-      attendanceLogs = [...attendanceLogs, `${student.name} signed in`];
     }
     loading = false;
-    attendanceLogs = [];
     isAttendanceOpen = false;
   }
 
@@ -142,52 +154,81 @@
   }
 </script>
 
-<AttendancePopup bind:isOpen={isAttendanceOpen}>
+<AttendancePopup bind:isOpen={isAttendanceOpen} bind:locked={loading}>
   <h2>New Attendance</h2>
-  <table class="student-table">
-    <thead>
-      <tr class="border-b-2 border-foreground-400">
-        <th>Name</th>
-        <th>CWID</th>
-        <th>Attended?</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#if students.length !== 0}
-        {#each students as student}
-          <tr class="space-under">
-            <td>{student.name}</td>
-            <td>{student.cwid}</td>
-            <input
-              type="checkbox"
-              bind:checked={student.checkedForAttendance}
-            />
-          </tr>
-        {/each}
+  {#if !loading}
+    <table class="student-table">
+      <thead>
+        <tr class="border-b-2 border-foreground-400">
+          <th>Name</th>
+          <th>CWID</th>
+          <th>Attended?</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#if students.length !== 0}
+          {#each students as student}
+            <tr class="space-under">
+              <td>{student.name}</td>
+              <td>{student.cwid}</td>
+              <input
+                type="checkbox"
+                bind:checked={student.checkedForAttendance}
+              />
+            </tr>
+          {/each}
+        {:else}
+          <div>No students signed in yet.</div>
+        {/if}
+      </tbody>
+    </table>
+    <button
+      class="btn-contrast full-w"
+      on:click={markAttendance}
+      disabled={loading}
+    >
+      {#if loading}
+        Processing...
       {:else}
-        <div>No students signed in yet.</div>
+        Submit Attendance
       {/if}
-    </tbody>
-  </table>
-  <button
-    class="btn-contrast full-w"
-    on:click={markAttendance}
-    disabled={loading}
-  >
-    {#if loading}
-      Processing...
-    {:else}
-      Submit Attendance
-    {/if}
-  </button>
+    </button>
+  {:else}
+    <div style="margin-top: 1rem;">
+      <p>Taking attendance, please do not refresh this page...</p>
 
-  <div style="margin-top: 1rem;">
-    {#if attendanceLogs.length}
-      {#each attendanceLogs as log}
-        <div>{log}</div>
-      {/each}
-    {/if}
-  </div>
+      <table class="student-table">
+        <thead>
+          <tr class="border-b-2 border-foreground-400">
+            <th>Name</th>
+            <th>CWID</th>
+            <th>Attended?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#if students.length !== 0}
+            {#each studentsAttending as studentAttending}
+              <tr class="space-under">
+                <td>{studentAttending.student.name}</td>
+                <td>{studentAttending.student.cwid}</td>
+                <td>
+                  {#if studentAttending.attending === "processed"}
+                    Done
+                  {:else if studentAttending.attending === "processing"}
+                    Waiting...
+                  {:else}
+                    Skipped
+                  {/if}
+                </td>
+              </tr>
+            {/each}
+          {:else}
+            <div>No students signed in yet.</div>
+          {/if}
+        </tbody>
+      </table>
+    </div>
+  {/if}
 </AttendancePopup>
 
 <main>
