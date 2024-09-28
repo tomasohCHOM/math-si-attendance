@@ -33,10 +33,14 @@
   let newStudentName: string = "";
   let newStudentCWID: string = "";
 
+  let processingAttendance = false;
+  let attendanceTakenToday = false;
+  let attendanceErrors: string[] = [];
+
   // UI variables
   let isAttendanceOpen: boolean = false;
   let newStudentErrorMessage: string = "";
-  let loading: boolean = false;
+  let takingAttendance: boolean = false;
 
   function addNewStudent() {
     if (!isValidStudent(newStudentName, newStudentCWID)) {
@@ -59,6 +63,11 @@
     students.splice(i, 1);
     students = students;
     updateStudentsStorage();
+  }
+
+  function syncAttendanceDate() {
+    attendanceTakenToday = true;
+    localStorage.setItem("last-attendance-date", JSON.stringify(Date.now()));
   }
 
   function updateStudentsStorage() {
@@ -94,8 +103,7 @@
   }
 
   async function markAttendance() {
-    let responseMessage = "";
-    loading = true;
+    (takingAttendance = true), (processingAttendance = true);
     console.log("Attendance for:", course);
 
     studentsAttending = students.map((student) => ({
@@ -109,9 +117,7 @@
         continue;
       }
       console.log("SIGNING IN:", student.name);
-      await new Promise((r) => setTimeout(r, 2000));
-      studentsAttending[i].attending = "processed";
-      studentsAttending = studentsAttending;
+
       const res = await fetch(
         `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
         {
@@ -121,20 +127,23 @@
       );
       const data = await res.json();
       console.log("response:", data);
-      if (data.errmessage.length === 0) {
-        // response = 1;
-      } else {
-        responseMessage = data["errmessage"];
+
+      if (data.errmessage.length !== 0) {
+        studentsAttending[i].attending = "failed";
+
+        studentsAttending = studentsAttending;
+        const responseMessage = `Failure while signing in ${student.name}: ${data.errmessage}`;
         console.log(responseMessage);
+        attendanceErrors = [...attendanceErrors, responseMessage];
+        continue;
       }
 
-      if (responseMessage.length) {
-        loading = false;
-        return;
-      }
+      studentsAttending[i].attending = "processed";
+      studentsAttending = studentsAttending;
       console.log(student.name, "SIGNED IN");
     }
-    loading = false;
+    processingAttendance = false;
+    syncAttendanceDate();
   }
 
   onMount(async () => {
@@ -142,23 +151,38 @@
     if (storedStudents) {
       students = JSON.parse(storedStudents);
     }
-    const storedCourse = localStorage.getItem("course");
-    if (storedCourse) {
-      course = storedCourse;
+    course = localStorage.getItem("course") ?? course;
+
+    const storedLastAttendanceDate = localStorage.getItem(
+      "last-attendance-date",
+    );
+    let lastAttendanceDate = Date.now();
+    if (storedLastAttendanceDate) {
+      lastAttendanceDate = JSON.parse(storedLastAttendanceDate);
+    }
+    const hourDelta: number = Math.abs(lastAttendanceDate - Date.now()) * 36e5;
+    if (hourDelta < 18) {
+      attendanceTakenToday = true;
     }
   });
 
   $: if (course) {
     localStorage.setItem("course", course);
   }
+  $: if (!isAttendanceOpen) {
+    takingAttendance = false;
+  }
 </script>
 
-<AttendancePopup bind:isOpen={isAttendanceOpen} bind:locked={loading}>
+<AttendancePopup
+  bind:isOpen={isAttendanceOpen}
+  bind:locked={processingAttendance}
+>
   <h2>New Attendance</h2>
-  {#if !loading}
+  {#if !takingAttendance}
     <table class="student-table">
       <thead>
-        <tr class="border-b-2 border-foreground-400">
+        <tr>
           <th>Name</th>
           <th>CWID</th>
           <th>Attended?</th>
@@ -167,10 +191,11 @@
       <tbody>
         {#if students.length !== 0}
           {#each students as student}
-            <tr class="space-under">
+            <tr>
               <td>{student.name}</td>
               <td>{student.cwid}</td>
               <input
+                name={student.name + " attendance checkbox"}
                 type="checkbox"
                 bind:checked={student.checkedForAttendance}
               />
@@ -181,47 +206,62 @@
         {/if}
       </tbody>
     </table>
+
+    {#if attendanceTakenToday}
+      <p>You already took attendance today. Do you want to do it again?</p>
+    {/if}
+
     <button
       class="btn-contrast full-w"
       on:click={markAttendance}
-      disabled={loading}
+      disabled={takingAttendance}
     >
       Submit Attendance
     </button>
   {:else}
     <div style="margin-top: 1rem;">
-      <p>Taking attendance, please do not refresh this page...</p>
+      {#if processingAttendance}
+        <p>
+          Taking attendance, please do not refresh this page unless you are
+          sure...
+        </p>
+      {:else}
+        <p>Done! You can close the pop up now :)</p>
+      {/if}
+
+      {#if attendanceErrors.length !== 0}
+        <h3 class="error-title">Errors taking attendance! Logs:</h3>
+        {#each attendanceErrors as error}
+          <p>{error}</p>
+        {/each}
+      {/if}
 
       <table class="student-table">
         <thead>
-          <tr class="border-b-2 border-foreground-400">
+          <tr>
             <th>Name</th>
             <th>CWID</th>
             <th>Attended?</th>
           </tr>
         </thead>
         <tbody>
-          {#if students.length !== 0}
-            {#each studentsAttending as studentAttending}
-              <tr class="space-under">
-                <td>{studentAttending.student.name}</td>
-                <td>{studentAttending.student.cwid}</td>
-                <td style="font-weight: 500;">
-                  {#if studentAttending.attending === "processed"}
-                    ✅
-                  {:else if studentAttending.attending === "processing"}
-                    <img width="20" src="/loading.svg" alt="Loading Icon" />
-                  {:else if studentAttending.attending === "failed"}
-                    Error ❌
-                  {:else}
-                    Skipped
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          {:else}
-            <div>No students signed in yet.</div>
-          {/if}
+          {#each studentsAttending as studentAttending}
+            <tr>
+              <td>{studentAttending.student.name}</td>
+              <td>{studentAttending.student.cwid}</td>
+              <td style="font-weight: 500;">
+                {#if studentAttending.attending === "processed"}
+                  ✅
+                {:else if studentAttending.attending === "processing"}
+                  <img width="20" src="/loading.svg" alt="Loading Icon" />
+                {:else if studentAttending.attending === "failed"}
+                  Error ❌
+                {:else}
+                  Skipped
+                {/if}
+              </td>
+            </tr>
+          {/each}
         </tbody>
       </table>
     </div>
@@ -234,7 +274,7 @@
   <p>A website to make Math SI Attendance a little more bearable.</p>
 
   <div>
-    <select class="select-box" bind:value={course}>
+    <select name="course-select" class="select-box" bind:value={course}>
       <option value="" selected hidden> SI COURSE </option>
       {#each courses as courseOption}
         <option value={courseOption}>{courseOption}</option>
@@ -255,7 +295,7 @@
 
     <table class="student-table">
       <thead>
-        <tr class="border-b-2 border-foreground-400">
+        <tr>
           <th>Name</th>
           <th>CWID</th>
           <th>Options</th>
@@ -264,7 +304,7 @@
       <tbody>
         {#if students.length !== 0}
           {#each students as student, i}
-            <tr class="space-under">
+            <tr>
               <td>{student.name}</td>
               <td>{student.cwid}</td>
               <button class="btn-danger" on:click={() => deleteStudent(i)}>
@@ -280,14 +320,16 @@
 
     <div class="add-student-container">
       <input
-        class="input-elem"
+        name="student-name-textbox"
         placeholder="Enter student name"
         bind:value={newStudentName}
+        class="input-elem"
       />
       <input
-        class="input-elem"
+        name="student-cwid-textbox"
         placeholder="Enter student CWID"
         bind:value={newStudentCWID}
+        class="input-elem"
       />
       <button class="btn-contrast" on:click={addNewStudent}>Add Student</button>
     </div>
@@ -310,6 +352,10 @@
     margin-block: 0;
   }
 
+  .error-title {
+    color: rgb(var(--color-foreground-red));
+  }
+
   .select-box {
     padding: 1rem 2rem;
     font-weight: bold;
@@ -322,13 +368,18 @@
   }
 
   .student-table {
-    margin-top: 0.5rem;
+    margin-top: 1rem;
     padding: 0.25rem 0.5rem;
     border-radius: 0.5rem;
     text-align: left;
     width: 100%;
     background-color: rgb(var(--color-background-500));
     border-spacing: 0 0.5rem;
+  }
+
+  .student-table > thead > tr > th {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid white;
   }
 
   .add-student-container {
