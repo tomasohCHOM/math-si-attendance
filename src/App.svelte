@@ -53,14 +53,14 @@
     if (!isValidStudent(studentName, studentCWID)) {
       return;
     }
-    students = [
-      ...students,
-      {
-        name: studentName,
-        cwid: studentCWID,
-        checkedForAttendance: true,
-      },
-    ];
+    students.push({
+      name: studentName,
+      cwid: studentCWID,
+      checkedForAttendance: true,
+    });
+    students.sort((a, b) => a.name.localeCompare(b.name));
+    students = students;
+
     newStudentName = "";
     newStudentCWID = "";
     updateStudentsStorage();
