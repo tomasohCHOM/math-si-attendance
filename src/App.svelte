@@ -12,6 +12,8 @@
     "MATH-250",
     "MATH-280",
   ];
+  const textareaPlaceholder =
+    'Enter student names and their CWIDs, separated by a comma (e.g "John Doe, 884593508"). Add multiple students by putting a new line in between each.';
 
   type Student = {
     name: string;
@@ -32,6 +34,8 @@
   let course: string = "";
   let newStudentName: string = "";
   let newStudentCWID: string = "";
+  // If wanting to add many students at once
+  let newStudents: string = "";
 
   let processingAttendance = false;
   let attendanceTakenToday = false;
@@ -42,21 +46,32 @@
   let newStudentErrorMessage: string = "";
   let takingAttendance: boolean = false;
 
-  function addNewStudent() {
-    if (!isValidStudent(newStudentName, newStudentCWID)) {
+  function addNewStudent(
+    studentName: string = newStudentName,
+    studentCWID: string = newStudentCWID,
+  ) {
+    if (!isValidStudent(studentName, studentCWID)) {
       return;
     }
     students = [
       ...students,
       {
-        name: newStudentName,
-        cwid: newStudentCWID,
+        name: studentName,
+        cwid: studentCWID,
         checkedForAttendance: true,
       },
     ];
     newStudentName = "";
     newStudentCWID = "";
     updateStudentsStorage();
+  }
+
+  function addMultipleStudents() {
+    for (const studentEntry of newStudents.split("\n")) {
+      const [studentName, studentCWID] = studentEntry.split("\t");
+      addNewStudent(studentName, studentCWID);
+    }
+    newStudents = "";
   }
 
   function deleteStudent(i: number) {
@@ -331,7 +346,9 @@
         bind:value={newStudentCWID}
         class="input-elem"
       />
-      <button class="btn-contrast" on:click={addNewStudent}>Add Student</button>
+      <button class="btn-contrast" on:click={() => addNewStudent()}>
+        Add Student
+      </button>
     </div>
 
     {#if newStudentErrorMessage}
@@ -340,6 +357,13 @@
       </p>
     {/if}
   {/if}
+
+  <div class="add-multiple-students-container">
+    <textarea bind:value={newStudents} placeholder={textareaPlaceholder} />
+    <button class="btn-contrast" on:click={addMultipleStudents}>
+      Add Students
+    </button>
+  </div>
 </main>
 
 <style>
@@ -388,6 +412,28 @@
     gap: 0.25rem;
   }
 
+  .add-multiple-students-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .add-multiple-students-container > textarea {
+    width: 100%;
+    height: 300px;
+    resize: vertical;
+    background-color: rgb(var(--color-background-500));
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    font-family: "Lato", sans-serif;
+    font-size: 1rem;
+  }
+
+  .add-multiple-students-container > button {
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
   .input-elem {
     outline: none;
     border: none;
@@ -417,6 +463,7 @@
     min-width: max-content;
     cursor: pointer;
     font-weight: bold;
+    font-family: "Lato", sans-serif;
     background-color: rgb(var(--color-foreground-blue));
     transition: filter 150ms ease;
   }
