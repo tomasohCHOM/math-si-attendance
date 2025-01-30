@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import AttendancePopup from "./lib/attendance-popup.svelte";
+  import Popup from "./lib/popup.svelte";
+  import HelpPopup from "./lib/help-popup.svelte";
 
   const courses = [
     "MATH-115",
@@ -13,7 +14,7 @@
     "MATH-280",
   ];
   const textareaPlaceholder =
-    'Enter student names and their CWIDs, separated by a comma (e.g "John Doe, 884593508"). Add multiple students by putting a new line in between each.';
+    'Enter student names and their CWIDs, separated by a tab (e.g "Doe, John<TAB>884593508"). Add multiple students by putting a new line in between each.';
 
   type Student = {
     name: string;
@@ -43,6 +44,7 @@
 
   // UI variables
   let isAttendanceOpen: boolean = false;
+  let isHelpOpen: boolean = false;
   let newStudentErrorMessage: string = "";
   let takingAttendance: boolean = false;
 
@@ -189,10 +191,7 @@
   }
 </script>
 
-<AttendancePopup
-  bind:isOpen={isAttendanceOpen}
-  bind:locked={processingAttendance}
->
+<Popup bind:isOpen={isAttendanceOpen} bind:locked={processingAttendance}>
   <h2>New Attendance</h2>
   {#if !takingAttendance}
     <table class="student-table">
@@ -281,10 +280,25 @@
       </table>
     </div>
   {/if}
-</AttendancePopup>
+</Popup>
+
+<HelpPopup bind:isHelpOpen />
 
 <main>
-  <h1>MATH SI Attendance</h1>
+  <div class="nav">
+    <h1>MATH SI Attendance</h1>
+    <div class="right">
+      <button class="help-btn" on:click={() => (isHelpOpen = true)}>
+        <img src="/help.svg" alt="Help Icon" />
+      </button>
+      <a
+        href="https://github.com/tomasohCHOM/math-si-attendance"
+        target="_blank"
+      >
+        <img src="/github.svg" alt="GitHub Icon" />
+      </a>
+    </div>
+  </div>
 
   <p>A website to make Math SI Attendance a little more bearable.</p>
 
@@ -356,14 +370,13 @@
         {newStudentErrorMessage}
       </p>
     {/if}
+    <div class="add-multiple-students-container">
+      <textarea bind:value={newStudents} placeholder={textareaPlaceholder} />
+      <button class="btn-contrast" on:click={addMultipleStudents}>
+        Add Students
+      </button>
+    </div>
   {/if}
-
-  <div class="add-multiple-students-container">
-    <textarea bind:value={newStudents} placeholder={textareaPlaceholder} />
-    <button class="btn-contrast" on:click={addMultipleStudents}>
-      Add Students
-    </button>
-  </div>
 </main>
 
 <style>
@@ -372,8 +385,28 @@
     margin-inline: auto;
   }
 
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav > .right {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
   h2 {
     margin-block: 0;
+  }
+
+  .help-btn {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
   }
 
   .error-title {
@@ -413,6 +446,7 @@
   }
 
   .add-multiple-students-container {
+    margin-top: 1rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;

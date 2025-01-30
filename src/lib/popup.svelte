@@ -19,7 +19,9 @@
     out:fly={{ y: 40, duration: 150 }}
   >
     {#if !locked}
-      <button class="custom-close-btn" on:click={toggleContainer}> X </button>
+      <button class="custom-close-btn" on:click={toggleContainer}>
+        <img src="/close.svg" alt="Close Icon" />
+      </button>
     {/if}
     <slot />
   </div>
