@@ -4,14 +4,16 @@
   import HelpPopup from "./lib/help-popup.svelte";
 
   const courses = [
-    "MATH-115",
-    "MATH-120",
-    "MATH-125",
-    "MATH-130",
-    "MATH-135",
-    "MATH-150",
-    "MATH-250",
-    "MATH-280",
+    { label: "MATH-115A", value: "MATH-115A" },
+    { label: "MATH-115B", value: "MATH-115B" },
+    { label: "MATH-120", value: "MATH-120" },
+    { label: "MATH-125", value: "MATH-125$" },
+    { label: "MATH-130", value: "MATH-130" },
+    { label: "MATH-135", value: "MATH-135$" },
+    { label: "MATH-150", value: "MATH-150" },
+    { label: "MATH-250A", value: "MATH-250A" },
+    { label: "MATH-250B", value: "MATH-250B" },
+    { label: "MATH-280", value: "MATH-280" },
   ];
   const textareaPlaceholder =
     'Enter student names and their CWIDs, separated by a tab (e.g "Doe, John<TAB>884593508"). Add multiple students by putting a new line in between each.';
@@ -306,7 +308,7 @@
     <select name="course-select" class="select-box" bind:value={course}>
       <option value="" selected hidden> SI COURSE </option>
       {#each courses as courseOption}
-        <option value={courseOption}>{courseOption}</option>
+        <option value={courseOption.value}>{courseOption.label}</option>
       {/each}
     </select>
   </div>
