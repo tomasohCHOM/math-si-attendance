@@ -137,30 +137,50 @@
       }
       console.log("SIGNING IN:", student.name);
 
-      const res = await fetch(
-        `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      const data = await res.json();
-      console.log("response:", data);
+      try {
+        const res = await fetch(
+          `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
 
-      if (data.errmessage.length !== 0) {
-        studentsAttending[i].attending = "failed";
+        if (!res.ok) {
+          throw new Error(`HTTP Error ${res.status}: Error with the server`);
+        }
 
+        const data = await res.json();
+        console.log("response:", data);
+
+        if (data.errmessage.length !== 0) {
+          // If failed to sign in this student, continue to next one
+          studentsAttending[i].attending = "failed";
+          studentsAttending = studentsAttending;
+          const responseMessage = `Failure while signing in ${student.name}: ${data.errmessage}`;
+          console.log(responseMessage);
+          attendanceErrors = [...attendanceErrors, responseMessage];
+          continue;
+        }
+
+        studentsAttending[i].attending = "processed";
         studentsAttending = studentsAttending;
-        const responseMessage = `Failure while signing in ${student.name}: ${data.errmessage}`;
-        console.log(responseMessage);
-        attendanceErrors = [...attendanceErrors, responseMessage];
-        continue;
+        console.log(student.name, "SIGNED IN");
+      } catch (error: any) {
+        // If error with the server, stop immediately
+        studentsAttending[i].attending = "failed";
+        // Skip other students as well
+        for (let j = i + 1; j < studentsAttending.length; j++) {
+          studentsAttending[j].attending = "none";
+        }
+        studentsAttending = studentsAttending;
+        const errorMessage = `Error signing in ${student.name} - ${error.message}`;
+        console.log(errorMessage);
+        attendanceErrors = [...attendanceErrors, errorMessage];
+        break;
       }
-
-      studentsAttending[i].attending = "processed";
-      studentsAttending = studentsAttending;
-      console.log(student.name, "SIGNED IN");
     }
+
     processingAttendance = false;
     syncAttendanceDate();
   }
