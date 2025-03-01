@@ -15,8 +15,12 @@
     { label: "MATH-250B", value: "MATH-250B" },
     { label: "MATH-280", value: "MATH-280" },
   ];
-  const textareaPlaceholder =
-    'Enter student names and their CWIDs, separated by a tab (e.g "Doe, John<TAB>884593508"). Add multiple students by putting a new line in between each.';
+  const textareaPlaceholder = `Enter students' information separated by a new line. You can either:
+
+  1. Enter the student's name and their CWID separated by a tab (e.g "Doe, John<TAB>881234567") OR
+  2. Enter the student's name followed by a colon (":") and the student's CWID (e.g "Doe, John: 881234567").
+
+Check out the help guide for further instructions!`;
 
   type Student = {
     name: string;
@@ -72,8 +76,19 @@
 
   function addMultipleStudents() {
     for (const studentEntry of newStudents.split("\n")) {
-      const [studentName, studentCWID] = studentEntry.split("\t");
-      addNewStudent(studentName, studentCWID);
+      // Try splitting by tabs first
+      const splitByTab = studentEntry.split("\t");
+      if (splitByTab.length === 2) {
+        const [studentName, studentCWID] = splitByTab;
+        addNewStudent(studentName, studentCWID);
+      } else {
+        // Look for a colon ":"
+        const splitByColon = studentEntry.split(":");
+        if (splitByColon.length !== 2) {
+          continue;
+        }
+        addNewStudent(splitByColon[0].trim(), splitByColon[1].trim());
+      }
     }
     newStudents = "";
   }
