@@ -52,14 +52,17 @@ Check out the help guide for further instructions!`;
   let isAttendanceOpen: boolean = false;
   let isHelpOpen: boolean = false;
   let newStudentErrorMessage: string = "";
+  let newStudentsErrorMessage: string = "";
   let takingAttendance: boolean = false;
 
   function addNewStudent(
     studentName: string = newStudentName,
     studentCWID: string = newStudentCWID,
-  ) {
-    if (!isValidStudent(studentName, studentCWID)) {
-      return;
+  ): string {
+    const validateStudentError = validateNewStudent(studentName, studentCWID);
+    if (validateStudentError.length !== 0) {
+      newStudentErrorMessage = validateStudentError;
+      return validateStudentError;
     }
     students.push({
       name: studentName,
@@ -72,10 +75,14 @@ Check out the help guide for further instructions!`;
     newStudentName = "";
     newStudentCWID = "";
     updateStudentsStorage();
+    return "";
   }
 
   function addMultipleStudents() {
-    for (const studentEntry of newStudents.split("\n")) {
+    const students = newStudents.split("\n");
+    let i: number;
+    for (i = 0; i < students.length; i++) {
+      const studentEntry = students[i];
       // Try splitting by tabs first
       const splitByTab = studentEntry.split("\t");
       if (splitByTab.length === 2) {
@@ -85,12 +92,24 @@ Check out the help guide for further instructions!`;
         // Look for a colon ":"
         const splitByColon = studentEntry.split(":");
         if (splitByColon.length !== 2) {
-          continue;
+          newStudentsErrorMessage = "Invalid!";
+          break;
         }
-        addNewStudent(splitByColon[0].trim(), splitByColon[1].trim());
+        const validateStudentError = addNewStudent(
+          splitByColon[0].trim(),
+          splitByColon[1].trim(),
+        );
+        if (validateStudentError.length !== 0) {
+          newStudentsErrorMessage = validateStudentError;
+          break;
+        }
       }
     }
-    newStudents = "";
+    if (i == students.length) {
+      newStudentsErrorMessage = "";
+    }
+    students.splice(0, i);
+    newStudents = students.join("\n");
   }
 
   function deleteStudent(i: number) {
@@ -108,32 +127,26 @@ Check out the help guide for further instructions!`;
     localStorage.setItem("students", JSON.stringify(students));
   }
 
-  function isValidStudent(studentName: string, cwid: string): boolean {
+  function validateNewStudent(studentName: string, cwid: string): string {
     if (!studentName.length) {
-      newStudentErrorMessage = "Name cannot be empty.";
-      return false;
+      return "Name cannot be empty.";
     }
     if (!cwid.length) {
-      newStudentErrorMessage = "CWID cannot be empty.";
-      return false;
+      return "CWID cannot be empty.";
     }
     if (cwid.length != 9) {
-      newStudentErrorMessage = "CWID should be 9 digits long.";
-      return false;
+      return "CWID should be 9 digits long.";
     }
     if (cwid[0] != "8") {
-      newStudentErrorMessage = "CWID should start with an 8.";
-      return false;
+      return "CWID should start with an 8.";
     }
 
     for (const char of cwid) {
       if (char < "0" || char > "9") {
-        newStudentErrorMessage = "CWID should only contain digits.";
-        return false;
+        return "CWID should only contain digits.";
       }
     }
-    newStudentErrorMessage = "";
-    return true;
+    return "";
   }
 
   async function markAttendance() {
@@ -407,12 +420,19 @@ Check out the help guide for further instructions!`;
         {newStudentErrorMessage}
       </p>
     {/if}
+
     <div class="add-multiple-students-container">
       <textarea bind:value={newStudents} placeholder={textareaPlaceholder} />
       <button class="btn-contrast" on:click={addMultipleStudents}>
         Add Students
       </button>
     </div>
+
+    {#if newStudentsErrorMessage}
+      <p style="color: rgb(var(--color-foreground-red))">
+        {newStudentsErrorMessage}
+      </p>
+    {/if}
   {/if}
 </main>
 
