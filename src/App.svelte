@@ -157,6 +157,7 @@ Check out the help guide for further instructions!`;
       student,
       attending: student.checkedForAttendance ? "processing" : "none",
     }));
+    attendanceErrors = [];
 
     for (let i = 0; i < students.length; i++) {
       const student = students[i];
@@ -208,7 +209,11 @@ Check out the help guide for further instructions!`;
         break;
       }
     }
-
+    if (attendanceErrors.length === 0) {
+      setTimeout(() => {
+        isAttendanceOpen = false;
+      }, 3000);
+    }
     processingAttendance = false;
     syncAttendanceDate();
   }
@@ -290,7 +295,7 @@ Check out the help guide for further instructions!`;
           sure...
         </p>
       {:else}
-        <p>Done! You can close the pop up now :)</p>
+        <p>Done! Closing the pop up now :)</p>
       {/if}
 
       {#if attendanceErrors.length !== 0}
