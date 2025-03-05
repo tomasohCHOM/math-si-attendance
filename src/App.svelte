@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { Student, StudentAttending } from "./lib/types";
   import Popup from "./lib/popup.svelte";
+  import StudentAttendannce from "./lib/student-attendance.svelte";
   import HelpPopup from "./lib/help-popup.svelte";
 
   const courses = [
@@ -19,19 +21,6 @@
 
   1. Enter the student's name and their CWID separated by a tab (e.g "Doe, John<TAB>881234567") OR
   2. Enter the student's name followed by a colon (":") and the student's CWID (e.g "Doe, John: 881234567").`;
-
-  type Student = {
-    name: string;
-    cwid: string;
-    checkedForAttendance: boolean;
-  };
-
-  type Attending = "processed" | "processing" | "none" | "failed";
-
-  type StudentAttending = {
-    student: Student;
-    attending: Attending;
-  };
 
   let students: Student[] = [];
   let studentsAttending: StudentAttending[] = [];
@@ -244,96 +233,16 @@
   }
 </script>
 
-<Popup bind:isOpen={isAttendanceOpen} bind:locked={processingAttendance}>
-  <h2>New Attendance</h2>
-  {#if !takingAttendance}
-    <table class="student-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>CWID</th>
-          <th>Attended?</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#if students.length !== 0}
-          {#each students as student}
-            <tr>
-              <td>{student.name}</td>
-              <td>{student.cwid}</td>
-              <input
-                name={student.name + " attendance checkbox"}
-                type="checkbox"
-                bind:checked={student.checkedForAttendance}
-              />
-            </tr>
-          {/each}
-        {:else}
-          <div>No students signed in yet.</div>
-        {/if}
-      </tbody>
-    </table>
-
-    {#if attendanceTakenToday}
-      <p>You already took attendance today. Do you want to do it again?</p>
-    {/if}
-
-    <button
-      class="btn-contrast full-w"
-      on:click={markAttendance}
-      disabled={takingAttendance}
-    >
-      Submit Attendance
-    </button>
-  {:else}
-    <div style="margin-top: 1rem;">
-      {#if processingAttendance}
-        <p>
-          Taking attendance, please do not refresh this page unless you are
-          sure...
-        </p>
-      {:else}
-        <p>Done! Closing the pop up now :)</p>
-      {/if}
-
-      {#if attendanceErrors.length !== 0}
-        <h3 class="error-title">Errors taking attendance! Logs:</h3>
-        {#each attendanceErrors as error}
-          <p>{error}</p>
-        {/each}
-      {/if}
-
-      <table class="student-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>CWID</th>
-            <th>Attended?</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each studentsAttending as studentAttending}
-            <tr>
-              <td>{studentAttending.student.name}</td>
-              <td>{studentAttending.student.cwid}</td>
-              <td style="font-weight: 500;">
-                {#if studentAttending.attending === "processed"}
-                  ✅
-                {:else if studentAttending.attending === "processing"}
-                  <img width="20" src="/loading.svg" alt="Loading Icon" />
-                {:else if studentAttending.attending === "failed"}
-                  Error ❌
-                {:else}
-                  Skipped
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  {/if}
-</Popup>
+<StudentAttendannce
+  bind:isAttendanceOpen
+  {processingAttendance}
+  {takingAttendance}
+  {attendanceTakenToday}
+  {students}
+  {studentsAttending}
+  {attendanceErrors}
+  {markAttendance}
+/>
 
 <HelpPopup bind:isHelpOpen />
 
@@ -457,20 +366,12 @@
     gap: 0.25rem;
   }
 
-  h2 {
-    margin-block: 0;
-  }
-
   .help-btn {
     background: none;
     border: none;
     outline: none;
     cursor: pointer;
     padding: 0;
-  }
-
-  .error-title {
-    color: rgb(var(--color-foreground-red));
   }
 
   .select-box {
@@ -482,21 +383,6 @@
 
   .select-box > option {
     font-size: 1.125rem;
-  }
-
-  .student-table {
-    margin-top: 1rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.5rem;
-    text-align: left;
-    width: 100%;
-    background-color: rgb(var(--color-background-500));
-    border-spacing: 0 0.5rem;
-  }
-
-  .student-table > thead > tr > th {
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid white;
   }
 
   .add-student-container {
@@ -535,39 +421,5 @@
     padding: 0.75rem;
     border-radius: 1rem;
     background-color: rgb(var(--color-background-500));
-  }
-
-  .btn-danger {
-    outline: none;
-    border: 2px solid rgb(var(--color-foreground-red));
-    padding: 0.75rem;
-    border-radius: 1rem;
-    min-width: max-content;
-    cursor: pointer;
-    font-weight: bold;
-    background-color: rgb(var(--color-background-500));
-    transition: filter 150ms ease;
-  }
-
-  .btn-contrast {
-    outline: none;
-    border: none;
-    padding: 0.25rem 0.5rem;
-    border-radius: 1rem;
-    min-width: max-content;
-    cursor: pointer;
-    font-weight: bold;
-    font-family: "Lato", sans-serif;
-    background-color: rgb(var(--color-foreground-blue));
-    transition: filter 150ms ease;
-  }
-
-  .full-w {
-    width: 100%;
-    padding: 0.5rem;
-  }
-
-  .btn-contrast:hover {
-    filter: brightness(1.1);
   }
 </style>
