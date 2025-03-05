@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Student, StudentAttending } from "./lib/types";
-  import Popup from "./lib/popup.svelte";
-  import StudentAttendannce from "./lib/student-attendance.svelte";
-  import HelpPopup from "./lib/help-popup.svelte";
+  import StudentAttendannce from "./lib/components/student-attendance.svelte";
+  import HelpPopup from "./lib/components/help-popup.svelte";
 
   const courses = [
     { label: "MATH-115A", value: "MATH-115A" },
