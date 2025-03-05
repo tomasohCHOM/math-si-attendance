@@ -18,9 +18,7 @@
   const textareaPlaceholder = `Enter students' information separated by a new line. You can either:
 
   1. Enter the student's name and their CWID separated by a tab (e.g "Doe, John<TAB>881234567") OR
-  2. Enter the student's name followed by a colon (":") and the student's CWID (e.g "Doe, John: 881234567").
-
-Check out the help guide for further instructions!`;
+  2. Enter the student's name followed by a colon (":") and the student's CWID (e.g "Doe, John: 881234567").`;
 
   type Student = {
     name: string;
