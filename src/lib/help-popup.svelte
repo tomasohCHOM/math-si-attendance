@@ -33,6 +33,7 @@
       further automated if you have the list of students organized in an Excel
       sheet. The gif below demonstrates how to add all students at once:
     </p>
+    <img src="/help/multiple-students.gif" alt="Adding Multiple Students" />
     <h3>Marking Attendance</h3>
     <p>
       If you want to mark attendance for a specific SI session, click on the
@@ -46,11 +47,13 @@
       checkbox associated with that student and they won't be signed into
       TitanNet.
     </p>
+    <img src="/help/untoggle-student.png" alt="Untoggle Student" />
     <p>
       Marking attendance for students is an automatic process. It will close the
-      pop up once it is done. If an error occurs with the process, it will
+      pop up once it is done. If an error occurs within the process, it will
       appear as shown below:
     </p>
+    <img src="/help/attendance-error.png" alt="Attendance Error" />
     <h3>Acknowledgements</h3>
     <p>
       I hope this tool can be useful to some extent as I know the tedious
@@ -83,5 +86,9 @@
 
   p {
     line-height: 1.5;
+  }
+
+  img {
+    width: 100%;
   }
 </style>
