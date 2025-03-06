@@ -13,8 +13,7 @@
         href="https://github.com/JustinStitt/si-attendance"
         target="_blank">si-attendance</a
       >
-      backend by providing users with an UI that signs in students who attend SI
-      Sessions.
+      backend by providing users with an UI that interacts with this API.
       <b
         >If you are not a Math SI Leader at CSUF, you should not be using this
         website (and it would not be helpful in any way either!).</b
