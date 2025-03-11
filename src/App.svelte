@@ -195,11 +195,7 @@
         break;
       }
     }
-    if (attendanceErrors.length === 0) {
-      setTimeout(() => {
-        isAttendanceOpen = false;
-      }, 3000);
-    }
+
     processingAttendance = false;
     syncAttendanceDate();
   }
