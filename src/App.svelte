@@ -5,7 +5,7 @@
   import HelpPopup from "./lib/components/help-popup.svelte";
   import StudentList from "./lib/components/student-list.svelte";
   import StudentForm from "./lib/components/student-form.svelte";
-  import MultipleStudentsForm from "./lib/components/multiple-students-form.svelte";
+  import MultipleStudentsForm from "./lib/components/students-form.svelte";
   import CourseSelector from "./lib/components/course-selector.svelte";
 
   // UI state variables
