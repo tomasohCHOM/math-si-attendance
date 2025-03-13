@@ -1,12 +1,13 @@
-import { get } from 'svelte/store';
+import { get } from "svelte/store";
 import {
   studentsStore,
   studentsAttendingStore,
   processingAttendanceStore,
   attendanceErrors,
   courseStore,
-  syncAttendanceDate
-} from '../stores/stores';
+  syncAttendanceDate,
+  resetStudentsAttending,
+} from "../stores/stores";
 
 export async function markStudentAttendance() {
   processingAttendanceStore.set(true);
@@ -14,6 +15,8 @@ export async function markStudentAttendance() {
   const course = get(courseStore);
 
   attendanceErrors.set([]);
+  studentsAttendingStore.set(resetStudentsAttending());
+
   let currentErrors: string[] = [];
 
   for (let i = 0; i < students.length; i++) {
@@ -39,7 +42,7 @@ export async function markStudentAttendance() {
       console.log("API Response:", data);
       if (data.errmessage.length !== 0) {
         // If failed to sign in this student, continue to next one
-        studentsAttendingStore.update(attending => {
+        studentsAttendingStore.update((attending) => {
           attending[i].attending = "failed";
           return attending;
         });
@@ -50,13 +53,13 @@ export async function markStudentAttendance() {
         attendanceErrors.set(currentErrors);
         continue;
       }
-      studentsAttendingStore.update(attending => {
+      studentsAttendingStore.update((attending) => {
         attending[i].attending = "processed";
         return attending;
       });
     } catch (error: any) {
       // If error with the server, stop immediately
-      studentsAttendingStore.update(attending => {
+      studentsAttendingStore.update((attending) => {
         attending[i].attending = "failed";
         // Skip other students as well
         for (let j = i + 1; j < attending.length; j++) {

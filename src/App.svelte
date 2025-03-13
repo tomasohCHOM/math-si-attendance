@@ -10,8 +10,8 @@
 
   // UI state variables
   let isAttendanceOpen: boolean = false;
-  let isHelpOpen: boolean = false;
   let takingAttendance: boolean = false;
+  let isHelpOpen: boolean = false;
 
   // Derived values from stores
   let course: string;
@@ -30,6 +30,11 @@
       $attendanceTakenToday = true;
     }
   });
+
+  // If the user closes the attendance popup, we are no longer taking attendance
+  $: if (!isAttendanceOpen) {
+    takingAttendance = false;
+  }
 </script>
 
 <StudentAttendance bind:isAttendanceOpen bind:takingAttendance />

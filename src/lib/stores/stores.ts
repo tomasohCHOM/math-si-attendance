@@ -1,4 +1,4 @@
-import { writable } from "svelte/store"
+import { writable, get } from "svelte/store";
 import type { Student, StudentAttending } from "../types";
 
 export const courses = [
@@ -31,10 +31,19 @@ function getInitialStudents(): Student[] {
 export const studentsStore = writable<Student[]>(getInitialStudents());
 studentsStore.subscribe((students) => {
   localStorage.setItem("students", JSON.stringify(students));
-})
+});
 
 // Attendance stores
-export const studentsAttendingStore = writable<StudentAttending[]>([]);
+export function resetStudentsAttending(): StudentAttending[] {
+  const students = get(studentsStore);
+  return students.map((student) => ({
+    student,
+    attending: student.checkedForAttendance ? "processing" : "none",
+  }));
+}
+export const studentsAttendingStore = writable<StudentAttending[]>(
+  resetStudentsAttending(),
+);
 export const processingAttendanceStore = writable<boolean>(false);
 export const attendanceTakenToday = writable<boolean>(false);
 export const attendanceErrors = writable<string[]>([]);

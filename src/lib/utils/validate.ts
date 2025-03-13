@@ -27,11 +27,14 @@ export function addStudent(name: string, cwid: string): string {
   if (error) return error;
 
   studentsStore.update((students) => {
-    const newStudents = [...students, {
-      name,
-      cwid,
-      checkedForAttendance: true
-    }];
+    const newStudents = [
+      ...students,
+      {
+        name,
+        cwid,
+        checkedForAttendance: true,
+      },
+    ];
     newStudents.sort((a, b) => a.name.localeCompare(b.name));
     return newStudents;
   });
@@ -43,13 +46,17 @@ export function deleteStudent(index: number): void {
     const newStudents = [...students];
     newStudents.splice(index, 1);
     return newStudents;
-  })
+  });
 }
 
 // Used when inputting multiple students through the textarea
-export function formatMultipleStudents(input: string): { success: boolean, students: { name: string, cwid: string }[], errorMessage: string } {
+export function formatMultipleStudents(input: string): {
+  success: boolean;
+  students: { name: string; cwid: string }[];
+  errorMessage: string;
+} {
   const studentEntries = input.split("\n");
-  const formattedStudents: { name: string, cwid: string }[] = [];
+  const formattedStudents: { name: string; cwid: string }[] = [];
   let errorMessage = "";
   for (let i = 0; i < studentEntries.length; i++) {
     const studentEntry = studentEntries[i].trim();
@@ -69,7 +76,8 @@ export function formatMultipleStudents(input: string): { success: boolean, stude
       // Look for a colon ":"
       const splitByColon = studentEntry.split(":");
       if (splitByColon.length !== 2) {
-        errorMessage = "Invalid format! Use either Tab or Colon to separate name and CWID.";
+        errorMessage =
+          "Invalid format! Use either Tab or Colon to separate name and CWID.";
         return { success: false, students: [], errorMessage };
       }
 
