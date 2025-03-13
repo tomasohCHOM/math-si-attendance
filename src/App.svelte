@@ -1,212 +1,23 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { Student, StudentAttending } from "./lib/types";
-  import StudentAttendannce from "./lib/components/student-attendance.svelte";
+  import { courseStore, attendanceTakenToday } from "./lib/stores/stores";
+  import StudentAttendance from "./lib/components/student-attendance.svelte";
   import HelpPopup from "./lib/components/help-popup.svelte";
+  import StudentList from "./lib/components/student-list.svelte";
+  import StudentForm from "./lib/components/student-form.svelte";
+  import MultipleStudentsForm from "./lib/components/multiple-students-form.svelte";
+  import CourseSelector from "./lib/components/course-selector.svelte";
 
-  const courses = [
-    { label: "MATH-115A", value: "MATH-115A" },
-    { label: "MATH-115B", value: "MATH-115B" },
-    { label: "MATH-120", value: "MATH-120" },
-    { label: "MATH-125", value: "MATH-125$" },
-    { label: "MATH-130", value: "MATH-130" },
-    { label: "MATH-135", value: "MATH-135$" },
-    { label: "MATH-150", value: "MATH-150" },
-    { label: "MATH-250A", value: "MATH-250A" },
-    { label: "MATH-250B", value: "MATH-250B" },
-    { label: "MATH-280", value: "MATH-280" },
-  ];
-  const textareaPlaceholder = `Enter students' information separated by a new line. You can either:
-
-  1. Enter the student's name and their CWID separated by a tab (e.g "Doe, John<TAB>881234567") OR
-  2. Enter the student's name followed by a colon (":") and the student's CWID (e.g "Doe, John: 881234567").`;
-
-  let students: Student[] = [];
-  let studentsAttending: StudentAttending[] = [];
-
-  let course: string = "";
-  let newStudentName: string = "";
-  let newStudentCWID: string = "";
-  // If wanting to add many students at once
-  let newStudents: string = "";
-
-  let processingAttendance = false;
-  let attendanceTakenToday = false;
-  let attendanceErrors: string[] = [];
-
-  // UI variables
+  // UI state variables
   let isAttendanceOpen: boolean = false;
   let isHelpOpen: boolean = false;
-  let newStudentErrorMessage: string = "";
-  let newStudentsErrorMessage: string = "";
   let takingAttendance: boolean = false;
 
-  function addNewStudent(
-    studentName: string = newStudentName,
-    studentCWID: string = newStudentCWID,
-  ): string {
-    const validateStudentError = validateNewStudent(studentName, studentCWID);
-    if (validateStudentError.length !== 0) {
-      newStudentErrorMessage = validateStudentError;
-      return validateStudentError;
-    }
-    students.push({
-      name: studentName,
-      cwid: studentCWID,
-      checkedForAttendance: true,
-    });
-    students.sort((a, b) => a.name.localeCompare(b.name));
-    students = students;
-
-    newStudentName = "";
-    newStudentCWID = "";
-    updateStudentsStorage();
-    return "";
-  }
-
-  function addMultipleStudents() {
-    const students = newStudents.split("\n");
-    let i: number;
-    for (i = 0; i < students.length; i++) {
-      const studentEntry = students[i];
-      // Try splitting by tabs first
-      const splitByTab = studentEntry.split("\t");
-      if (splitByTab.length === 2) {
-        const [studentName, studentCWID] = splitByTab;
-        addNewStudent(studentName, studentCWID);
-      } else {
-        // Look for a colon ":"
-        const splitByColon = studentEntry.split(":");
-        if (splitByColon.length !== 2) {
-          newStudentsErrorMessage = "Invalid!";
-          break;
-        }
-        const validateStudentError = addNewStudent(
-          splitByColon[0].trim(),
-          splitByColon[1].trim(),
-        );
-        if (validateStudentError.length !== 0) {
-          newStudentsErrorMessage = validateStudentError;
-          break;
-        }
-      }
-    }
-    if (i == students.length) {
-      newStudentsErrorMessage = "";
-    }
-    students.splice(0, i);
-    newStudents = students.join("\n");
-  }
-
-  function deleteStudent(i: number) {
-    students.splice(i, 1);
-    students = students;
-    updateStudentsStorage();
-  }
-
-  function syncAttendanceDate() {
-    attendanceTakenToday = true;
-    localStorage.setItem("last-attendance-date", JSON.stringify(Date.now()));
-  }
-
-  function updateStudentsStorage() {
-    localStorage.setItem("students", JSON.stringify(students));
-  }
-
-  function validateNewStudent(studentName: string, cwid: string): string {
-    if (!studentName.length) {
-      return "Name cannot be empty.";
-    }
-    if (!cwid.length) {
-      return "CWID cannot be empty.";
-    }
-    if (cwid.length != 9) {
-      return "CWID should be 9 digits long.";
-    }
-    if (cwid[0] != "8") {
-      return "CWID should start with an 8.";
-    }
-
-    for (const char of cwid) {
-      if (char < "0" || char > "9") {
-        return "CWID should only contain digits.";
-      }
-    }
-    return "";
-  }
-
-  async function markAttendance() {
-    (takingAttendance = true), (processingAttendance = true);
-    console.log("Attendance for:", course);
-
-    studentsAttending = students.map((student) => ({
-      student,
-      attending: student.checkedForAttendance ? "processing" : "none",
-    }));
-    attendanceErrors = [];
-
-    for (let i = 0; i < students.length; i++) {
-      const student = students[i];
-      if (!student.checkedForAttendance) {
-        continue;
-      }
-      console.log("SIGNING IN:", student.name);
-
-      try {
-        const res = await fetch(
-          `https://si-attendance-api.vercel.app/signin?cwid=${student.cwid}&course=${course}`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
-
-        if (!res.ok) {
-          throw new Error(`HTTP Error ${res.status}: Error with the server`);
-        }
-
-        const data = await res.json();
-        console.log("response:", data);
-
-        if (data.errmessage.length !== 0) {
-          // If failed to sign in this student, continue to next one
-          studentsAttending[i].attending = "failed";
-          studentsAttending = studentsAttending;
-          const responseMessage = `Failure while signing in ${student.name}: ${data.errmessage}`;
-          console.log(responseMessage);
-          attendanceErrors = [...attendanceErrors, responseMessage];
-          continue;
-        }
-
-        studentsAttending[i].attending = "processed";
-        studentsAttending = studentsAttending;
-        console.log(student.name, "SIGNED IN");
-      } catch (error: any) {
-        // If error with the server, stop immediately
-        studentsAttending[i].attending = "failed";
-        // Skip other students as well
-        for (let j = i + 1; j < studentsAttending.length; j++) {
-          studentsAttending[j].attending = "none";
-        }
-        studentsAttending = studentsAttending;
-        const errorMessage = `Error signing in ${student.name} - ${error.message}`;
-        console.log(errorMessage);
-        attendanceErrors = [...attendanceErrors, errorMessage];
-        break;
-      }
-    }
-
-    processingAttendance = false;
-    syncAttendanceDate();
-  }
+  // Derived values from stores
+  let course: string;
+  courseStore.subscribe((value) => (course = value));
 
   onMount(async () => {
-    const storedStudents = localStorage.getItem("students");
-    if (storedStudents) {
-      students = JSON.parse(storedStudents);
-    }
-    course = localStorage.getItem("course") ?? course;
-
     const storedLastAttendanceDate = localStorage.getItem(
       "last-attendance-date",
     );
@@ -216,28 +27,12 @@
     }
     const hourDelta: number = Math.abs(lastAttendanceDate - Date.now()) * 36e5;
     if (hourDelta < 18) {
-      attendanceTakenToday = true;
+      $attendanceTakenToday = true;
     }
   });
-
-  $: if (course) {
-    localStorage.setItem("course", course);
-  }
-  $: if (!isAttendanceOpen) {
-    takingAttendance = false;
-  }
 </script>
 
-<StudentAttendannce
-  bind:isAttendanceOpen
-  {processingAttendance}
-  {takingAttendance}
-  {attendanceTakenToday}
-  {students}
-  {studentsAttending}
-  {attendanceErrors}
-  {markAttendance}
-/>
+<StudentAttendance bind:isAttendanceOpen bind:takingAttendance />
 
 <HelpPopup bind:isHelpOpen />
 
@@ -259,14 +54,7 @@
 
   <p>A website to make Math SI Attendance a little more bearable.</p>
 
-  <div>
-    <select name="course-select" class="select-box" bind:value={course}>
-      <option value="" selected hidden> SI COURSE </option>
-      {#each courses as courseOption}
-        <option value={courseOption.value}>{courseOption.label}</option>
-      {/each}
-    </select>
-  </div>
+  <CourseSelector />
 
   {#if course}
     <button
@@ -279,67 +67,9 @@
       New Attendance
     </button>
 
-    <table class="student-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>CWID</th>
-          <th>Options</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#if students.length !== 0}
-          {#each students as student, i}
-            <tr>
-              <td>{student.name}</td>
-              <td>{student.cwid}</td>
-              <button class="btn-danger" on:click={() => deleteStudent(i)}>
-                Delete Student
-              </button>
-            </tr>
-          {/each}
-        {:else}
-          <div>No students signed in yet.</div>
-        {/if}
-      </tbody>
-    </table>
-
-    <div class="add-student-container">
-      <input
-        name="student-name-textbox"
-        placeholder="Enter student name"
-        bind:value={newStudentName}
-        class="input-elem"
-      />
-      <input
-        name="student-cwid-textbox"
-        placeholder="Enter student CWID"
-        bind:value={newStudentCWID}
-        class="input-elem"
-      />
-      <button class="btn-contrast" on:click={() => addNewStudent()}>
-        Add Student
-      </button>
-    </div>
-
-    {#if newStudentErrorMessage}
-      <p style="color: rgb(var(--color-foreground-red))">
-        {newStudentErrorMessage}
-      </p>
-    {/if}
-
-    <div class="add-multiple-students-container">
-      <textarea bind:value={newStudents} placeholder={textareaPlaceholder} />
-      <button class="btn-contrast" on:click={addMultipleStudents}>
-        Add Students
-      </button>
-    </div>
-
-    {#if newStudentsErrorMessage}
-      <p style="color: rgb(var(--color-foreground-red))">
-        {newStudentsErrorMessage}
-      </p>
-    {/if}
+    <StudentList />
+    <StudentForm />
+    <MultipleStudentsForm />
   {/if}
 </main>
 
@@ -367,54 +97,5 @@
     outline: none;
     cursor: pointer;
     padding: 0;
-  }
-
-  .select-box {
-    padding: 1rem 2rem;
-    font-weight: bold;
-    border-radius: 0.25rem;
-    background-color: rgb(var(--color-background-500));
-  }
-
-  .select-box > option {
-    font-size: 1.125rem;
-  }
-
-  .add-student-container {
-    margin-block: 2rem;
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .add-multiple-students-container {
-    margin-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .add-multiple-students-container > textarea {
-    width: 100%;
-    height: 300px;
-    resize: vertical;
-    background-color: rgb(var(--color-background-500));
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    font-family: "Lato", sans-serif;
-    font-size: 1rem;
-  }
-
-  .add-multiple-students-container > button {
-    padding: 1rem;
-    border-radius: 0.5rem;
-  }
-
-  .input-elem {
-    outline: none;
-    border: none;
-    width: 100%;
-    padding: 0.75rem;
-    border-radius: 1rem;
-    background-color: rgb(var(--color-background-500));
   }
 </style>
