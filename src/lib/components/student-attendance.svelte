@@ -1,17 +1,40 @@
 <script lang="ts">
-  import type { Student, StudentAttending } from "./types";
+  import type { Student, StudentAttending } from "../types";
   import Popup from "./popup.svelte";
+  import {
+    studentsStore,
+    studentsAttendingStore,
+    processingAttendanceStore,
+    attendanceTakenToday as attendanceTakenTodayStore,
+    attendanceErrors as attendanceErrorsStore,
+  } from "../stores/stores";
+  import { markStudentAttendance } from "../services/attendance";
 
   export let isAttendanceOpen: boolean;
-  export let processingAttendance: boolean;
   export let takingAttendance: boolean;
-  export let attendanceTakenToday: boolean;
 
-  export let markAttendance: () => void;
+  // Get values from stores
+  let processingAttendance: boolean;
+  let attendanceTakenToday: boolean;
+  let attendanceErrors: string[];
+  let students: Student[];
+  let studentsAttending: StudentAttending[];
 
-  export let students: Student[];
-  export let studentsAttending: StudentAttending[];
-  export let attendanceErrors: string[];
+  // Subscribe to stores
+  processingAttendanceStore.subscribe(
+    (value) => (processingAttendance = value),
+  );
+  attendanceTakenTodayStore.subscribe(
+    (value) => (attendanceTakenToday = value),
+  );
+  attendanceErrorsStore.subscribe((value) => (attendanceErrors = value));
+  studentsStore.subscribe((value) => (students = value));
+  studentsAttendingStore.subscribe((value) => (studentsAttending = value));
+
+  function handleMarkAttendance() {
+    takingAttendance = true;
+    markStudentAttendance();
+  }
 </script>
 
 <Popup bind:isOpen={isAttendanceOpen} bind:locked={processingAttendance}>
@@ -31,11 +54,13 @@
             <tr>
               <td>{student.name}</td>
               <td>{student.cwid}</td>
-              <input
-                name={student.name + " attendance checkbox"}
-                type="checkbox"
-                bind:checked={student.checkedForAttendance}
-              />
+              <td>
+                <input
+                  name={student.name + " attendance checkbox"}
+                  type="checkbox"
+                  bind:checked={student.checkedForAttendance}
+                />
+              </td>
             </tr>
           {/each}
         {:else}
@@ -43,14 +68,12 @@
         {/if}
       </tbody>
     </table>
-
     {#if attendanceTakenToday}
       <p>You already took attendance today. Do you want to do it again?</p>
     {/if}
-
     <button
       class="btn-contrast full-w"
-      on:click={markAttendance}
+      on:click={handleMarkAttendance}
       disabled={takingAttendance}
     >
       Submit Attendance
@@ -65,14 +88,12 @@
       {:else}
         <p>Done! Closing the pop up now :)</p>
       {/if}
-
       {#if attendanceErrors.length !== 0}
         <h3 class="error-title">Errors taking attendance! Logs:</h3>
         {#each attendanceErrors as error}
           <p>{error}</p>
         {/each}
       {/if}
-
       <table class="student-table">
         <thead>
           <tr>
@@ -113,3 +134,4 @@
     color: rgb(var(--color-foreground-red));
   }
 </style>
+

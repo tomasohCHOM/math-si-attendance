@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap");
 
 :root {
   --color-background-400: 28, 30, 35;
@@ -13,7 +13,7 @@
   color-scheme: dark;
 
   background-color: rgb(var(--color-background-400));
-  color: rgb(var(--color-foreground-neutral))
+  color: rgb(var(--color-foreground-neutral));
 }
 
 *,
@@ -31,7 +31,6 @@ body {
   padding-bottom: 3rem;
 }
 
-
 .student-table {
   margin-top: 1rem;
   padding: 0.25rem 0.5rem;
@@ -42,7 +41,7 @@ body {
   border-spacing: 0 0.5rem;
 }
 
-.student-table>thead>tr>th {
+.student-table > thead > tr > th {
   padding-bottom: 0.5rem;
   border-bottom: 1px solid white;
 }
