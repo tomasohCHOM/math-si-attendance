@@ -86,7 +86,7 @@
           sure...
         </p>
       {:else}
-        <p>Done! Closing the pop up now :)</p>
+        <p>Done! You can close the pop up now :)</p>
       {/if}
       {#if attendanceErrors.length !== 0}
         <h3 class="error-title">Errors taking attendance! Logs:</h3>
@@ -134,4 +134,3 @@
     color: rgb(var(--color-foreground-red));
   }
 </style>
-
